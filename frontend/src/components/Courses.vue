@@ -6,10 +6,41 @@
         <hr />
         <br /><br />
         <alert :message="message" v-if="showMessage"></alert>
-        <button type="button" class="btn btn-success btn-sm" v-b-modal.course-modal>
-          Add Review
-        </button>
         <br /><br />
+    <span v-if="numberTodo>0">{{ numberTodo }} / {{ numberTotal }} still to screen</span>
+    <span v-else>All done!</span>
+    <div v-for="(abstract, index) in abstracts" :key="abstract.id">
+    <b-card
+        :title="abstract.ti"
+        :header="abstract.citation"
+        :header-text-variant="headerText(abstract.included)"
+        :header-bg-variant="headerBack(abstract.included)"
+
+        >
+    <b-card-text>{{abstract.ab}}</b-card-text>
+       <b-form-group
+      v-slot="{ ariaDescribedby }"
+    >
+      <b-form-radio-group
+        v-model="abstract.included"
+        :options="includeOptions"
+        :aria-describedby="ariaDescribedby"
+        button-variant="outline-primary"
+        size="lg"
+        name="radio-btn-outline"
+        buttons
+      ></b-form-radio-group>
+    </b-form-group> 
+
+    </b-card>
+    </div>
+    <b-table striped hover :items="abstracts">
+          <template #cell(included)="data">
+            <input type="checkbox" v-model="data.included" />
+       </template>
+    </b-table>
+
+
         <table class="table table-hover">
           <thead>
             <tr>
@@ -17,25 +48,26 @@
               <th scope="col">Citation</th>
               <th scope="col">Title</th>
               <th scope="col">To screen</th>
-              <th scope="col">Inclusion</th>
+              <th scope="col">Included in review?</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="abstract in abstracts" :key="abstract.id">
-              <td>{{ abstract.data.pmid}}</td>
-              <td>{{ abstract.data.citation}}</td>
-              <td>{{ abstract.data.ti}}</td>
+            <tr v-for="(abstract, index) in abstracts" :key="abstract.id">
+              <td>{{ abstract.pmid}}</td>
+              <td>{{ abstract.citation}}</td>
+              <td>{{ abstract.ti}}</td>
               <td>
-                <span v-if="abstract.data.to_screen">Yes</span>
+                <span v-if="abstract.to_screen">Yes</span>
                 <span v-else>No</span>
               </td>
               <td>
-                <span v-if="abstract.data.included">Yes</span>
-                <span v-else>No</span>
-              </td>
+              <input type="checkbox" id="checkbox" v-model="abstract.included">
+              <label for="checkbox"><span v-if="abstract.included"> yes</span><span v-else> no</span></label>
               <!--<td>${{ course.NValue }}</td>-->
+              </td>
               <td>
+
                 <div class="btn-group" role="group">
                   <button
                     type="button"
@@ -239,6 +271,10 @@ export default {
         title: "rrlive test"
       },
       abstracts: [],
+      includeOptions: [
+          { text: 'Include', value: 'included' },
+          { text: 'Exclude', value: 'excluded' },
+        ],
       addCourseForm: {
         ReviewID: "",
         PubmedID: "",
@@ -267,13 +303,27 @@ export default {
 
   },
   computed: {
-    reference() {r
+    reference() {
       let text = "";
       let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
       for (let i = 0; i < 10; i++)
         text += possible.charAt(Math.floor(Math.random() * possible.length));
       return text;
-    }
+    },
+    numberTodo() {
+        return this.abstracts.filter(abstract => (abstract.included=='new')).length;
+    },
+    numberTotal() {
+        return this.abstracts.length;
+    },
+    filteredAbs() {
+      return this.abstracts.filter(item => {
+         return item.data.included
+      })
+    },
+    orderedAbs() {
+        return _.orderBy(this.abstracts, '')
+  }
   },
   methods: {
     getAbstracts() {
@@ -281,11 +331,23 @@ export default {
       absRef.once('value', (snapshot) => {
         snapshot.forEach((doc) => {
           abstractData.push({id: doc.id,
-                             data: doc.val()});
+                             pmid: doc.val().pmid,
+                             ti: doc.val().ti,
+                             ab: doc.val().ab,
+                             citation: doc.val().citation,
+                             included: doc.val().included,
+                             to_screen: doc.val().to_screen}
 
-            })
+            )
+        })
         });
         this.abstracts = abstractData;
+    },
+    headerText(state) {
+        if (state=='new') {return "white"} else {return "dark"}
+    },
+    headerBack(state) {
+        if (state=='new') {return "info"} else {return "light"}
     },
     addCourse(payload) {
       const path = "http://localhost:5000/courses";
