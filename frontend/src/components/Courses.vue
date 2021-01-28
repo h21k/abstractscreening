@@ -2,7 +2,7 @@
   <div class="container">
     <div class="row">
       <div class="col-sm-10">
-        <h1>RRLIVE TEST MECHANICS v0.17</h1>
+        <h1>RobotReviewer Live abstract screening</h1>
         <hr />
         <br /><br />
         <alert :message="message" v-if="showMessage"></alert>
@@ -13,32 +13,28 @@
         <table class="table table-hover">
           <thead>
             <tr>
-              <th scope="col">ReviewID</th>
-              <th scope="col">PubmedID</th>
+              <th scope="col">Pubmed ID</th>
+              <th scope="col">Citation</th>
               <th scope="col">Title</th>
-              <th scope="col">Abstract</th>
-              <th scope="col">ToBeScreened</th>
+              <th scope="col">To screen</th>
               <th scope="col">Inclusion</th>
-              <th scope="col">NValue</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(course, index) in courses" :key="index">
-              <td>{{ course.ReviewID }}</td>
-              <td>{{ course.PubmedID }}</td>
-              <td>{{ course.title }}</td>
-              <td>{{ course.abstract }}</td>
+            <tr v-for="abstract in abstracts" :key="abstract.id">
+              <td>{{ abstract.data.pmid}}</td>
+              <td>{{ abstract.data.citation}}</td>
+              <td>{{ abstract.data.ti}}</td>
               <td>
-                <span v-if="course.ToBeScreened">Yes</span>
+                <span v-if="abstract.data.to_screen">Yes</span>
                 <span v-else>No</span>
               </td>
               <td>
-                <span v-if="course.Inclusion">Yes</span>
+                <span v-if="abstract.data.included">Yes</span>
                 <span v-else>No</span>
               </td>
               <!--<td>${{ course.NValue }}</td>-->
-              <td>{{ course.NValue }}</td>
               <td>
                 <div class="btn-group" role="group">
                   <button
@@ -227,6 +223,11 @@
 <script>
 import axios from "axios";
 import Alert from "./Alert.vue";
+import firebase from "../firebaseInit";
+
+
+const db = firebase.database()
+const absRef = db.ref('review_results')
 
 export default {
   data() {
@@ -237,7 +238,7 @@ export default {
       custom: {
         title: "rrlive test"
       },
-      courses: [],
+      abstracts: [],
       addCourseForm: {
         ReviewID: "",
         PubmedID: "",
@@ -266,7 +267,7 @@ export default {
 
   },
   computed: {
-    reference() {
+    reference() {r
       let text = "";
       let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
       for (let i = 0; i < 10; i++)
@@ -275,16 +276,16 @@ export default {
     }
   },
   methods: {
-    getCourses() {
-      const path = "http://localhost:5000/courses";
-      axios
-        .get(path)
-        .then(res => {
-          this.courses = res.data.courses;
-        })
-        .catch(error => {
-          console.error(error);
+    getAbstracts() {
+      var abstractData = [];
+      absRef.once('value', (snapshot) => {
+        snapshot.forEach((doc) => {
+          abstractData.push({id: doc.id,
+                             data: doc.val()});
+
+            })
         });
+        this.abstracts = abstractData;
     },
     addCourse(payload) {
       const path = "http://localhost:5000/courses";
@@ -401,7 +402,7 @@ export default {
     }
   },
   created() {
-    this.getCourses();
+    this.getAbstracts();
   }
 };
 </script>
