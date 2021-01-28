@@ -275,6 +275,7 @@ export default {
       includeOptions: [
           { text: 'Include', value: 'included' },
           { text: 'Exclude', value: 'excluded' },
+          { text: 'reset', value: 'new'}
         ],
       addCourseForm: {
         ReviewID: "",
