@@ -28,6 +28,7 @@
         button-variant="outline-primary"
         size="lg"
         name="radio-btn-outline"
+        @change="updateFirebase(abstract.id, abstract.included)"
         buttons
       ></b-form-radio-group>
     </b-form-group> 
@@ -326,11 +327,16 @@ export default {
   }
   },
   methods: {
+    updateFirebase(id, state) {
+        db.ref("review_results/"+id).update({included: state});
+    },
     getAbstracts() {
       var abstractData = [];
       absRef.once('value', (snapshot) => {
         snapshot.forEach((doc) => {
-          abstractData.push({id: doc.id,
+          /* console.log(doc.getRef()); */
+          console.log(doc);
+          abstractData.push({id: doc.ref_.path.pieces_[1],
                              pmid: doc.val().pmid,
                              ti: doc.val().ti,
                              ab: doc.val().ab,
